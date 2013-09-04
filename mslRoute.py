@@ -3,35 +3,43 @@ import io
 import urllib2
 import json
 from pykml.factory import KML_ElementMaker as KML
+from pykml.factory import GX_ElementMaker as GX
 from lxml import etree
 
 URL = 'http://curiosityrover.com/drives'
 
 route = json.loads( urllib2.urlopen(URL).read() )
 
-pList = []
+pList = ''
 for point in route:
-    pm = KML.Placemark(
-        KML.name('Sol ' + str(point['sol'])),
-        KML.Point(
-            KML.coordinates( str(point['lon']) + ',' + str(point['lat']))
-            ),
-        KML.altitudeMode('clampToGround')
-        )
-    pList.append(pm)
+    pList = pList + str(point['lon']) + ',' + str(point['lat']) +',1,'
+
+pm = KML.Placemark(
+    KML.name('Curiosity traversal'),
+    KML.LookAt(
+        KML.longitude(route[0]['lon']),
+        KML.latitude(route[0]['lat']),
+        KML.heading('0'),
+        KML.tilt('40'),
+        KML.range('2000'),
+        GX.altitudeMode('relativeToSeaFloor'),
+        ),
+    KML.LineStyle(
+        KML.color('#00FFFF'),
+        KML.width(10)
+    ),
+    KML.altitudeMode('clampToGround'),
+    KML.LineString(KML.extrude('1'), GX.altitudeMode('relativeToSeaFloor'), KML.coordinates(pList))
+    )
 
 folder = KML.Folder()
-for placemark in pList:
-    folder.append(placemark)
+folder.append(pm)
 
 # create a document element with a single label style
 kmlobj = KML.kml(
     KML.Document(
         KML.Style(
-            KML.LabelStyle(
-                KML.scale(2)
-            ),
-            KML.IconStyle(KML.Icon(KML.scale(0.5))),
+            KML.LabelStyle( KML.scale(1) ),
             id="big_label"
         )
     )
